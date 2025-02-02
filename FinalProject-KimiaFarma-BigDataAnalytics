@@ -1,1 +1,45 @@
 # Rakamin-PBI-KFBigDataAnalytics
+
+WITH kf_final_transaction_laba AS 
+(
+  SELECT
+  *,
+    CASE
+      WHEN nett_sales <= 50000 THEN 0.1
+      WHEN nett_sales > 50000 AND nett_sales <= 100000 THEN 0.15
+      WHEN nett_sales > 100000 AND nett_sales <= 300000 THEN 0.2
+      WHEN nett_sales > 300000 AND nett_sales <= 500000 THEN 0.25
+      WHEN nett_sales > 500000 THEN 0.3
+    END AS persentase_gross_laba
+  FROM
+  (
+    SELECT 
+    *,
+     CAST (ROUND(price * (1-discount_percentage)) AS INT64) AS nett_sales
+    FROM `rakamin-kf-analytics-449609.kimia_farma.kf_final_transaction` 
+  )
+)
+
+SELECT
+  kft.transaction_id,
+  kft.date,
+  kft.branch_id,
+  kkc.branch_name,
+  kkc.kota,
+  kkc.provinsi,
+  kkc.rating AS rating_cabang,
+  kft.customer_name,
+  kft.product_id,
+  kp.product_name,
+  kft.price As actual_price,
+  kft.discount_percentage,
+  kft.persentase_gross_laba,
+  kft.nett_sales,
+  CAST(ROUND(kft.nett_sales * kft.persentase_gross_laba) AS INT64) AS net_profit,
+  kft.rating AS rating_transaksi
+FROM
+  kf_final_transaction_laba AS kft
+JOIN `rakamin-kf-analytics-449609.kimia_farma.kf_kantor_cabang` AS kkc
+  ON kkc.branch_id=kft.branch_id
+JOIN `rakamin-kf-analytics-449609.kimia_farma.kf_product` AS kp
+  ON kp.product_id = kft.product_id ;
